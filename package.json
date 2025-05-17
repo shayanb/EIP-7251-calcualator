@@ -1,6 +1,6 @@
 {
   "name": "eip-7251-calculator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ethereum Validator Rewards Calculator for EIP-7251",
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "eip-7251",
     "pectra"
   ],
-  "author": "",
+  "author": "Shayan Eskandari",
   "license": "MIT",
   "devDependencies": {
     "http-server": "^14.1.1",
