@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#f8f9fa"/>
+  <rect x="0" y="0" width="1200" height="100" fill="#1a2f60"/>
+  
+  <!-- ETH Diamond simplified, centered in left area -->
+  <g transform="translate(170, 315) scale(5)">
+    <!-- Diamond outline -->
+    <path d="M 25,0 L 50,25 L 25,50 L 0,25 Z" fill="#f8f9fa" stroke="#1a2f60" stroke-width="1.5"/>
+    <!-- Inner lines -->
+    <path d="M 25,5 L 25,20 L 12,25 L 25,30 L 25,45 L 38,25 Z" fill="none" stroke="#1a2f60" stroke-width="1.5"/>
+    <path d="M 25,5 L 12,25 L 25,45" fill="none" stroke="#1a2f60" stroke-width="1.5"/>
+  </g>
+  
+  <!-- Text content -->
+  <text x="400" y="200" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="#1a2f60">
+    Ethereum Validator
+  </text>
+  <text x="400" y="270" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="#1a2f60">
+    Rewards Calculator
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="400" y="340" font-family="Arial, sans-serif" font-size="36" fill="#6d7ca1">
+    EIP-7251: Increased MAX_EFFECTIVE_BALANCE
+  </text>
+  
+  <!-- Feature points -->
+  <g transform="translate(400, 400)">
+    <circle cx="0" cy="0" r="8" fill="#1a2f60"/>
+    <text x="25" y="10" font-family="Arial, sans-serif" font-size="28" fill="#333">
+      Compare 0x01 vs 0x02 credential types
+    </text>
+    
+    <circle cx="0" cy="50" r="8" fill="#1a2f60"/>
+    <text x="25" y="60" font-family="Arial, sans-serif" font-size="28" fill="#333">
+      Calculate compound rewards over time
+    </text>
+    
+    <circle cx="0" cy="100" r="8" fill="#1a2f60"/>
+    <text x="25" y="110" font-family="Arial, sans-serif" font-size="28" fill="#333">
+      Visualize balance growth with interactive charts
+    </text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="600" y="600" font-family="Arial, sans-serif" font-size="24" fill="#6d7ca1" text-anchor="middle">
+    shayanb.github.io/EIP-7251-calcualator
+  </text>
+</svg>
