@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethereum Validator Rewards Calculator (EIP-7251)</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Ethereum Validator Rewards Calculator</h1>
+        <h2>EIP-7251: Increased MAX_EFFECTIVE_BALANCE</h2>
+        
+        <div class="calculator-container">
+            <div class="form-group">
+                <div class="tab-container">
+                    <button class="tab-button active" data-tab="manual">Manual Input</button>
+                    <button class="tab-button" data-tab="api">Fetch Validator</button>
+                </div>
+                
+                <div id="manual-tab" class="tab-content active">
+                    <div class="input-group">
+                        <label for="initial-balance">Initial Balance (ETH)</label>
+                        <input type="number" id="initial-balance" min="32" max="2048" value="32" step="0.1">
+                    </div>
+                </div>
+                
+                <div id="api-tab" class="tab-content">
+                    <div class="input-group">
+                        <label for="validator-index">Validator Index or Address</label>
+                        <input type="text" id="validator-index" placeholder="Enter validator index or ETH address">
+                    </div>
+                    <button id="fetch-validator-btn" class="btn secondary-btn">Fetch Validator Data</button>
+                    <div id="validator-info" class="validator-info hidden">
+                        <div class="info-row">
+                            <span class="info-label">Current Balance:</span>
+                            <span id="current-balance" class="info-value">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Effective Balance:</span>
+                            <span id="effective-balance" class="info-value">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span id="validator-status" class="info-value">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Credential Type:</span>
+                            <span id="credential-type-display" class="info-value">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="credential-type">Withdrawal Credential Type</label>
+                    <select id="credential-type">
+                        <option value="0x01">0x01 (32 ETH Max Effective Balance)</option>
+                        <option value="0x02">0x02 (2048 ETH Max Effective Balance)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="reward-rate">Annual Base Reward Rate (%)</label>
+                    <input type="number" id="reward-rate" min="0.1" max="20" value="4.5" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="time-period">Time Period (Years)</label>
+                    <input type="number" id="time-period" min="1" max="10" value="5" step="1">
+                </div>
+                <div class="input-group">
+                    <label for="compound-frequency">Compound Frequency</label>
+                    <select id="compound-frequency">
+                        <option value="daily">Daily</option>
+                        <option value="epoch">Per Epoch (~6.4 minutes)</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="comparison-mode">Comparison Mode (0x01 vs 0x02)</label>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="comparison-mode" checked>
+                    </div>
+                </div>
+                <button id="calculate-btn" class="btn">Calculate Rewards</button>
+            </div>
+            
+            <div class="results">
+                <h3>Projected Rewards</h3>
+                <div id="single-result" class="result-group">
+                    <div class="result-item">
+                        <span class="label">Final Balance</span>
+                        <span id="final-balance" class="value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Total Rewards</span>
+                        <span id="total-rewards" class="value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">ROI</span>
+                        <span id="roi" class="value">-</span>
+                    </div>
+                </div>
+                <div id="comparison-result" class="result-group hidden">
+                    <div class="comparison-header">
+                        <span class="header-cell">Metric</span>
+                        <span class="header-cell">0x01 (32 ETH)</span>
+                        <span class="header-cell">0x02 (2048 ETH)</span>
+                        <span class="header-cell">Difference</span>
+                    </div>
+                    <div class="comparison-row">
+                        <span class="label-cell">Final Balance</span>
+                        <span id="compare-0x01-final" class="value-cell">-</span>
+                        <span id="compare-0x02-final" class="value-cell">-</span>
+                        <span id="compare-final-diff" class="diff-cell">-</span>
+                    </div>
+                    <div class="comparison-row">
+                        <span class="label-cell">Total Rewards</span>
+                        <span id="compare-0x01-rewards" class="value-cell">-</span>
+                        <span id="compare-0x02-rewards" class="value-cell">-</span>
+                        <span id="compare-rewards-diff" class="diff-cell">-</span>
+                    </div>
+                    <div class="comparison-row">
+                        <span class="label-cell">ROI</span>
+                        <span id="compare-0x01-roi" class="value-cell">-</span>
+                        <span id="compare-0x02-roi" class="value-cell">-</span>
+                        <span id="compare-roi-diff" class="diff-cell">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="rewards-chart"></canvas>
+        </div>
+        
+        <div class="info-container">
+            <h3>EIP-7251: Increased MAX_EFFECTIVE_BALANCE</h3>
+            <p>The Ethereum Pectra upgrade introduced EIP-7251, which increases the maximum effective balance for validators from 32 ETH to 2048 ETH for validators with 0x02 withdrawal credentials.</p>
+            <p>Key benefits:</p>
+            <ul>
+                <li>Validators with 0x02 credentials can have an effective balance up to 2048 ETH</li>
+                <li>Rewards compound automatically as they're added to the effective balance</li>
+                <li>Partial withdrawals only trigger when balance exceeds 2048 ETH (vs 32 ETH before)</li>
+                <li>Large stakers can consolidate validators, reducing operational complexity</li>
+                <li>Effective balance increases in 0.25 ETH increments once balance exceeds previous effective balance by 0.25 ETH</li>
+            </ul>
+            <p>This calculator helps you estimate your validator rewards with both credential types, and can fetch data from the Beacon Chain via beaconcha.in API.</p>
+            
+            <h3>Resources</h3>
+            <p>The calculator's reward calculation model is based on the following resources:</p>
+            <ul>
+                <li><a href="https://www.attestant.io/posts/exploring-validator-compounding/" target="_blank">Exploring Validator Compounding - Attestant.io</a></li>
+                <li><a href="https://eips.ethereum.org/EIPS/eip-7251" target="_blank">EIP-7251: Increase the MAX_EFFECTIVE_BALANCE</a></li>
+                <li><a href="https://ethereum.org/en/staking/" target="_blank">Ethereum Staking Documentation</a></li>
+                <li><a href="https://hackernoon.com/eip-7251-raising-maximum-effective-balance-for-validators" target="_blank">EIP-7251: Raising Maximum Effective Balance For Validators - Hackernoon</a></li>
+                <li><a href="https://consensys.io/blog/ethereum-pectra-upgrade" target="_blank">Understanding Ethereum's Pectra upgrade - Consensys</a></li>
+            </ul>
+            
+        </div>
+        
+        <footer class="footer">
+            <div class="footer-content">
+                <p>
+                    <a href="https://github.com/YourUsername/EIP-7251-calcualator" target="_blank">
+                        <i class="footer-icon github-icon"></i> GitHub
+                    </a> - Report bugs or request features
+                </p>
+                <p>
+                    <a href="https://x.com/YourXHandle" target="_blank">
+                        <i class="footer-icon x-icon"></i> X
+                    </a> - Follow for updates
+                </p>
+            </div>
+        </footer>
+    </div>
+    
+    <script src="js/calculator.js"></script>
+    <script src="js/api.js"></script>
+</body>
+</html>

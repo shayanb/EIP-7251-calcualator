@@ -1,0 +1,25 @@
+{
+  "name": "eip-7251-calculator",
+  "version": "1.0.0",
+  "description": "Ethereum Validator Rewards Calculator for EIP-7251",
+  "main": "index.js",
+  "scripts": {
+    "start": "http-server -p 8080",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "ethereum",
+    "validator",
+    "staking",
+    "eip-7251",
+    "pectra"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0"
+  }
+}

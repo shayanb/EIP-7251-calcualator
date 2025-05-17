@@ -1,0 +1,433 @@
+/* Base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2, h3 {
+    color: #1a2f60;
+    margin-bottom: 15px;
+}
+
+h1 {
+    font-size: 2.2rem;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+h2 {
+    font-size: 1.4rem;
+    text-align: center;
+    color: #6d7ca1;
+    margin-bottom: 30px;
+}
+
+h3 {
+    font-size: 1.5rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+}
+
+/* Tab system */
+.tab-container {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tab-button {
+    padding: 12px 20px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tab-button:hover {
+    color: #1a2f60;
+}
+
+.tab-button.active {
+    color: #1a2f60;
+    border-bottom-color: #1a2f60;
+}
+
+.tab-content {
+    display: none;
+    padding: 10px 0;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Calculator styles */
+.calculator-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 300px;
+}
+
+.input-group {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-group label {
+    flex: 0 0 180px;
+    margin-bottom: 0;
+}
+
+.input-group input, 
+.input-group select {
+    flex: 1;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    flex: 0 0 auto;
+}
+
+.checkbox-group label {
+    margin-bottom: 0;
+    margin-left: 8px;
+    flex: 1;
+}
+
+/* Tab-specific input styling */
+#api-tab .input-group {
+    display: block;
+}
+
+#api-tab .input-group label {
+    margin-bottom: 4px;
+}
+
+/* Checkbox styling within normal input-group */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.checkbox-label {
+    flex: 1;
+    font-size: 14px;
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+input, select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+    border-color: #6d7ca1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(109, 124, 161, 0.2);
+}
+
+.btn {
+    background-color: #1a2f60;
+    color: #fff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn:hover {
+    background-color: #111d3b;
+}
+
+.secondary-btn {
+    background-color: #6d7ca1;
+    margin-bottom: 15px;
+}
+
+.secondary-btn:hover {
+    background-color: #556585;
+}
+
+/* Validator info styles */
+.validator-info {
+    background-color: #f0f5ff;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e0e7ff;
+    padding-bottom: 8px;
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #1a2f60;
+}
+
+/* Results styles */
+.results {
+    flex: 1;
+    min-width: 300px;
+    padding: 20px;
+    background-color: #f7f9fc;
+    border-radius: 8px;
+    border-left: 5px solid #1a2f60;
+}
+
+.result-group {
+    margin-top: 20px;
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a2f60;
+}
+
+/* Comparison table */
+.comparison-header {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 700;
+}
+
+.comparison-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 15px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.comparison-row:last-child {
+    border-bottom: none;
+}
+
+.header-cell {
+    color: #1a2f60;
+    font-size: 0.9rem;
+}
+
+.label-cell {
+    font-weight: 600;
+    color: #495057;
+}
+
+.value-cell {
+    font-weight: 700;
+    color: #1a2f60;
+}
+
+.diff-cell {
+    font-weight: 700;
+    color: #28a745;
+}
+
+.diff-cell.negative {
+    color: #dc3545;
+}
+
+/* Chart styles */
+.chart-container {
+    margin: 40px 0;
+    height: 400px;
+    width: 100%;
+}
+
+/* Info container */
+.info-container {
+    background-color: #f7f9fc;
+    padding: 25px;
+    border-radius: 8px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.info-container p {
+    margin-bottom: 15px;
+    line-height: 1.7;
+}
+
+.info-container ul {
+    padding-left: 25px;
+    margin-bottom: 15px;
+}
+
+.info-container li {
+    margin-bottom: 8px;
+}
+
+/* Footer styles */
+.footer {
+    border-top: 1px solid #dee2e6;
+    padding: 20px 0;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+.footer p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.footer a {
+    color: #1a2f60;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+.footer-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-size: contain;
+    margin-right: 5px;
+    vertical-align: text-bottom;
+}
+
+.github-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z' fill='%231a2f60'/%3E%3C/svg%3E");
+}
+
+.x-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z' fill='%231a2f60'/%3E%3C/svg%3E");
+}
+
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .calculator-container {
+        flex-direction: column;
+    }
+    
+    .chart-container {
+        height: 300px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    h2 {
+        font-size: 1.2rem;
+    }
+    
+    .comparison-header, .comparison-row {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .comparison-header span:nth-child(3),
+    .comparison-header span:nth-child(4),
+    .comparison-row span:nth-child(3),
+    .comparison-row span:nth-child(4) {
+        display: none;
+    }
+}
