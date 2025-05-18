@@ -1,4 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Helper function to format dates in a user-friendly way
+    function formatDate(date) {
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+    
+    // Helper function to add days to a date
+    function addDays(date, days) {
+        const result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+    }
+    
+    // Helper function to add years to a date
+    function addYears(date, years) {
+        const result = new Date(date);
+        result.setFullYear(result.getFullYear() + years);
+        return result;
+    }
+
     // Constants for validator rewards calculation
     const SECONDS_PER_YEAR = 31536000;
     const SECONDS_PER_EPOCH = 384; // ~6.4 minutes
@@ -196,13 +219,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const effectiveBalanceData = [];
         
         // Initialize with starting values
-        let currentBalance = initialBalance;
-        // Effective balance is rounded down to the nearest EFFECTIVE_BALANCE_INCREMENT (0.25 ETH)
-        // and capped at maxEffectiveBalance
+        const actualInitialBalance = initialBalance;
+        // Capped initial balance for calculations
+        let currentBalance = actualInitialBalance;
+        
+        // Initial effective balance - cap to max effective balance for this credential type
         let currentEffectiveBalance = Math.min(
-            Math.floor(initialBalance / EFFECTIVE_BALANCE_INCREMENT) * EFFECTIVE_BALANCE_INCREMENT,
+            Math.floor(currentBalance / EFFECTIVE_BALANCE_INCREMENT) * EFFECTIVE_BALANCE_INCREMENT,
             maxEffectiveBalance
         );
+        
+        // Track withdrawals for 0x01 credentials (rewards over 32 ETH that would be auto-withdrawn)
+        let totalWithdrawals = 0;
+        
+        // Start with current date
+        const startDate = new Date();
+        // Create date labels - start with today's date
+        const dateLabels = [];
+        dateLabels.push(formatDate(startDate));
         
         timeLabels.push(0);
         balanceData.push(currentBalance);
@@ -219,8 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update effective balance with bounds
             if (credentialType === '0x01') {
                 // For 0x01, effective balance is capped at 32 ETH
-                // Any excess is automatically withdrawn and doesn't compound
                 currentEffectiveBalance = Math.min(MAX_EFFECTIVE_BALANCE_0X01, currentBalance);
+                
+                // For 0x01 credentials, simulate automatic withdrawals
+                // Any balance above 32 ETH gets withdrawn automatically
+                if (currentBalance > MAX_EFFECTIVE_BALANCE_0X01) {
+                    const withdrawal = currentBalance - MAX_EFFECTIVE_BALANCE_0X01;
+                    totalWithdrawals += withdrawal;
+                    currentBalance = MAX_EFFECTIVE_BALANCE_0X01;
+                }
             } else {
                 // For 0x02, effective balance can grow up to 2048 ETH
                 // Note: Effective balance only increases when total balance exceeds 
@@ -243,30 +284,72 @@ document.addEventListener('DOMContentLoaded', () => {
             if (compoundFrequency === 'epoch') {
                 // Record approximately daily for epoch compounding
                 if (interval % Math.floor(EPOCHS_PER_YEAR / 365) === 0 || interval === totalIntervals) {
+                    // Calculate date for this data point
+                    const daysFromStart = Math.floor((interval / intervalsPerYear) * 365);
+                    const pointDate = addDays(startDate, daysFromStart);
+                    dateLabels.push(formatDate(pointDate));
+                    
                     timeLabels.push(yearFraction.toFixed(2));
-                    balanceData.push(currentBalance);
+                    
+                    // Store the actual balance for the chart - for 0x01, include withdrawals
+                    if (credentialType === '0x01') {
+                        balanceData.push(currentBalance + totalWithdrawals);
+                    } else {
+                        balanceData.push(currentBalance);
+                    }
+                    
                     effectiveBalanceData.push(currentEffectiveBalance);
                 }
             } else {
                 // Record every interval for other compounding frequencies
+                // Calculate date for this interval based on frequency
+                let pointDate;
+                if (compoundFrequency === 'daily') {
+                    pointDate = addDays(startDate, interval);
+                } else if (compoundFrequency === 'monthly') {
+                    pointDate = new Date(startDate);
+                    pointDate.setMonth(pointDate.getMonth() + interval);
+                } else { // yearly
+                    pointDate = addYears(startDate, interval);
+                }
+                dateLabels.push(formatDate(pointDate));
+                
                 timeLabels.push(yearFraction.toFixed(2));
-                balanceData.push(currentBalance);
+                
+                // Store the actual balance for the chart - for 0x01, include withdrawals
+                if (credentialType === '0x01') {
+                    balanceData.push(currentBalance + totalWithdrawals);
+                } else {
+                    balanceData.push(currentBalance);
+                }
+                
                 effectiveBalanceData.push(currentEffectiveBalance);
             }
         }
         
         // Calculate final results
-        const finalBalance = currentBalance;
-        const totalRewards = finalBalance - initialBalance;
-        const roi = (totalRewards / initialBalance) * 100;
+        // For 0x01 credentials, we need to add back the withdrawals to get the true total balance
+        const finalBalance = credentialType === '0x01' ? 
+            currentBalance + totalWithdrawals : currentBalance;
+        
+        // Total rewards is the difference between final balance and initial balance
+        const totalRewards = finalBalance - actualInitialBalance;
+        
+        // ROI calculation
+        const roi = (totalRewards / actualInitialBalance) * 100;
         
         return {
             timeLabels,
+            dateLabels,
+            // Balance data already includes withdrawals for 0x01
             balanceData,
             effectiveBalanceData,
             finalBalance,
             totalRewards,
-            roi
+            roi,
+            totalWithdrawals,
+            // Store the real final validator balance (without withdrawals for 0x01)
+            validatorBalance: currentBalance
         };
     }
     
@@ -289,11 +372,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Update UI
             finalBalanceEl.textContent = `${results.finalBalance.toFixed(4)} ETH`;
+            document.getElementById('effective-balance-result').textContent = `${results.effectiveBalanceData[results.effectiveBalanceData.length - 1].toFixed(4)} ETH`;
             totalRewardsEl.textContent = `${results.totalRewards.toFixed(4)} ETH ${timeWindowText}`;
             roiEl.textContent = `${results.roi.toFixed(2)}% ${timeWindowText}`;
             
             // Update chart
-            updateChart(results.timeLabels, results.balanceData, results.effectiveBalanceData);
+            updateChart(results.dateLabels, results.balanceData, results.effectiveBalanceData);
         } else {
             // Show comparison result div, hide single result div
             document.getElementById('single-result').classList.add('hidden');
@@ -302,6 +386,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Compare 0x01 vs 0x02
             const results0x01 = calculateRewardsForCredentialType('0x01');
             const results0x02 = calculateRewardsForCredentialType('0x02');
+            
+            // Get the final effective balances
+            const effectiveBalance0x01 = results0x01.effectiveBalanceData[results0x01.effectiveBalanceData.length - 1];
+            const effectiveBalance0x02 = results0x02.effectiveBalanceData[results0x02.effectiveBalanceData.length - 1];
+            const effectiveBalanceDiff = effectiveBalance0x02 - effectiveBalance0x01;
             
             // Calculate differences
             const finalBalanceDiff = results0x02.finalBalance - results0x01.finalBalance;
@@ -313,6 +402,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('compare-0x02-final').textContent = `${results0x02.finalBalance.toFixed(4)} ETH`;
             document.getElementById('compare-final-diff').textContent = `${finalBalanceDiff > 0 ? '+' : ''}${finalBalanceDiff.toFixed(4)} ETH`;
             document.getElementById('compare-final-diff').classList.toggle('negative', finalBalanceDiff < 0);
+            
+            document.getElementById('compare-0x01-effective').textContent = `${effectiveBalance0x01.toFixed(4)} ETH`;
+            document.getElementById('compare-0x02-effective').textContent = `${effectiveBalance0x02.toFixed(4)} ETH`;
+            document.getElementById('compare-effective-diff').textContent = `${effectiveBalanceDiff > 0 ? '+' : ''}${effectiveBalanceDiff.toFixed(4)} ETH`;
+            document.getElementById('compare-effective-diff').classList.toggle('negative', effectiveBalanceDiff < 0);
             
             document.getElementById('compare-0x01-rewards').textContent = `${results0x01.totalRewards.toFixed(4)} ETH`;
             document.getElementById('compare-0x02-rewards').textContent = `${results0x02.totalRewards.toFixed(4)} ETH`;
@@ -330,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Update chart with both datasets
             updateComparisonChart(
-                results0x01.timeLabels, 
+                results0x01.dateLabels,
                 results0x01.balanceData, 
                 results0x01.effectiveBalanceData,
                 results0x02.balanceData,
@@ -361,7 +455,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         backgroundColor: 'rgba(26, 47, 96, 0.1)',
                         fill: true,
                         tension: 0.3,
-                        order: 1
+                        order: 1,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: (ctx) => ctx.dataIndex === 0 || ctx.dataIndex === labels.length - 1 ? 3 : 0,
+                        pointHoverRadius: 5
                     },
                     {
                         label: 'Effective Balance (ETH)',
@@ -370,14 +467,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         backgroundColor: 'rgba(109, 124, 161, 0.1)',
                         borderDash: [5, 5],
                         fill: false,
-                        tension: 0.3,
-                        order: 2
+                        tension: 0.1,
+                        order: 2,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: (ctx) => ctx.dataIndex === 0 || ctx.dataIndex === labels.length - 1 ? 3 : 0,
+                        pointHoverRadius: 5
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
                     tooltip: {
                         mode: 'index',
@@ -389,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return `${label}: ${value.toFixed(4)} ETH`;
                             },
                             title: function(tooltipItems) {
-                                return `Year ${tooltipItems[0].label}`;
+                                return labels[tooltipItems[0].dataIndex];
                             }
                         }
                     },
@@ -406,7 +510,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         display: true,
                         title: {
                             display: true,
-                            text: 'Years'
+                            text: 'Date'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     },
                     y: {
@@ -415,7 +522,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             display: true,
                             text: 'ETH'
                         },
-                        beginAtZero: false
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        borderWidth: 2
+                    },
+                    point: {
+                        borderWidth: 1,
+                        backgroundColor: 'white'
                     }
                 }
             }
@@ -443,8 +562,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         borderColor: '#1a2f60',
                         backgroundColor: 'rgba(26, 47, 96, 0.1)',
                         fill: false,
-                        tension: 0.3,
-                        order: 1
+                        tension: 0.2,
+                        order: 1,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: (ctx) => ctx.dataIndex === 0 || ctx.dataIndex === labels.length - 1 ? 3 : 0,
+                        pointHoverRadius: 5
                     },
                     {
                         label: '0x01 Effective Balance',
@@ -452,8 +574,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         borderColor: '#1a2f60',
                         borderDash: [5, 5],
                         fill: false,
-                        tension: 0.3,
-                        order: 2
+                        tension: 0.1,
+                        order: 2,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: (ctx) => ctx.dataIndex === 0 || ctx.dataIndex === labels.length - 1 ? 3 : 0,
+                        pointHoverRadius: 5,
+                        stepped: 'before'
                     },
                     {
                         label: '0x02 Total Balance',
@@ -461,8 +587,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         borderColor: '#28a745',
                         backgroundColor: 'rgba(40, 167, 69, 0.1)',
                         fill: false,
-                        tension: 0.3,
-                        order: 3
+                        tension: 0.2,
+                        order: 3,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: (ctx) => ctx.dataIndex === 0 || ctx.dataIndex === labels.length - 1 ? 3 : 0,
+                        pointHoverRadius: 5
                     },
                     {
                         label: '0x02 Effective Balance',
@@ -470,14 +599,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         borderColor: '#28a745',
                         borderDash: [5, 5],
                         fill: false,
-                        tension: 0.3,
-                        order: 4
+                        tension: 0.1,
+                        order: 4,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: (ctx) => ctx.dataIndex === 0 || ctx.dataIndex === labels.length - 1 ? 3 : 0,
+                        pointHoverRadius: 5,
+                        stepped: 'before'
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
                     tooltip: {
                         mode: 'index',
@@ -489,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return `${label}: ${value.toFixed(4)} ETH`;
                             },
                             title: function(tooltipItems) {
-                                return `Year ${tooltipItems[0].label}`;
+                                return labels[tooltipItems[0].dataIndex];
                             }
                         }
                     },
@@ -506,7 +643,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         display: true,
                         title: {
                             display: true,
-                            text: 'Years'
+                            text: 'Date'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     },
                     y: {
@@ -515,7 +655,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             display: true,
                             text: 'ETH'
                         },
-                        beginAtZero: false
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        borderWidth: 2
+                    },
+                    point: {
+                        borderWidth: 1,
+                        backgroundColor: 'white'
                     }
                 }
             }

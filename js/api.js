@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const comparisonModeSelect = document.getElementById('comparison-mode');
     const singleResultDiv = document.getElementById('single-result');
     const comparisonResultDiv = document.getElementById('comparison-result');
+    const updateBalanceBtn = document.getElementById('update-balance-btn');
+    const balanceChangeInput = document.getElementById('balance-change');
+    
+    // Variables to store validator data
+    let currentValidatorData = null;
     
     // beaconcha.in API base URL
     const API_BASE_URL = 'https://beaconcha.in/api/v1';
@@ -134,6 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         console.log("Raw validator data:", validator);
         
+        // Store the validator data for later use
+        currentValidatorData = validator;
+        
         // Convert balance from gwei to ETH (beaconcha.in returns balance as a string)
         let currentBalance;
         let effectiveBalance;
@@ -189,6 +197,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('validator-status').textContent = validator.status || 'Unknown';
         document.getElementById('credential-type-display').textContent = credentialPrefix;
         
+        // Show/hide credential upgrade note
+        const upgradeNoteEl = document.getElementById('credential-upgrade-note');
+        if (credentialPrefix === '0x00' || credentialType === '0x01') {
+            upgradeNoteEl.classList.remove('hidden');
+        } else {
+            upgradeNoteEl.classList.add('hidden');
+        }
+        
+        // Clear any previous value in the balance change input
+        balanceChangeInput.value = '';
+        
         // Update form inputs
         initialBalanceInput.value = currentBalance.toFixed(6);
         credentialTypeSelect.value = credentialType;
@@ -231,5 +250,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if (validator) {
             displayValidatorData(validator);
         }
+    });
+    
+    // Handle update balance button click
+    updateBalanceBtn.addEventListener('click', () => {
+        // Get the entered balance change value
+        const balanceChange = parseFloat(balanceChangeInput.value.trim());
+        
+        // Validate the input
+        if (isNaN(balanceChange) || balanceChange < 0) {
+            alert('Please enter a valid non-negative ETH amount');
+            return;
+        }
+        
+        // Get the current balance
+        const currentBalanceText = document.getElementById('current-balance').textContent;
+        const currentBalance = parseFloat(currentBalanceText.split(' ')[0]);
+        
+        // Calculate the new balance
+        const newBalance = currentBalance + balanceChange;
+        
+        // Update the displayed current balance
+        document.getElementById('current-balance').textContent = `${newBalance.toFixed(6)} ETH`;
+        
+        // Update the initial balance input for calculation
+        initialBalanceInput.value = newBalance.toFixed(6);
+        
+        // Store the top-up amount for future use
+        // We'll keep the input value visible rather than clearing it
+        
+        // Show notification of the change
+        const notificationEl = document.getElementById('balance-update-notification');
+        const messageEl = document.getElementById('balance-change-message');
+        messageEl.textContent = `Balance updated: +${balanceChange.toFixed(2)} ETH (${currentBalance.toFixed(2)} → ${newBalance.toFixed(2)} ETH)`;
+        
+        // Show the notification
+        notificationEl.classList.remove('hidden');
+        
+        // Hide notification after 4 seconds
+        setTimeout(() => {
+            notificationEl.classList.add('hidden');
+        }, 4000);
+        
+        // Recalculate rewards with the new balance
+        document.getElementById('calculate-btn').click();
+        
+        // Check if credential type is 0x01 and show upgrade note if needed
+        const credentialPrefix = document.getElementById('credential-type-display').textContent;
+        const upgradeNoteEl = document.getElementById('credential-upgrade-note');
+        
+        if (credentialPrefix === '0x00' || credentialPrefix === '0x01') {
+            upgradeNoteEl.classList.remove('hidden');
+        } else {
+            upgradeNoteEl.classList.add('hidden');
+        }
+        
+        console.log(`Balance updated: ${currentBalance} ETH + ${balanceChange} ETH = ${newBalance} ETH`);
     });
 });

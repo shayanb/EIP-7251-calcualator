@@ -54,13 +54,29 @@
                 <div id="api-tab" class="tab-content">
                     <div class="input-group">
                         <label for="validator-index">Validator Index or Address</label>
-                        <input type="text" id="validator-index" placeholder="Enter validator index or ETH address">
+                        <input type="text" id="validator-index" placeholder="Enter validator index or ETH address" autocomplete="on">
                     </div>
                     <button id="fetch-validator-btn" class="btn secondary-btn">Fetch Validator Data</button>
                     <div id="validator-info" class="validator-info hidden">
                         <div class="info-row">
                             <span class="info-label">Current Balance:</span>
                             <span id="current-balance" class="info-value">-</span>
+                        </div>
+                        <div class="info-row balance-edit-row">
+                            <span class="info-label">Top-up Amount:</span>
+                            <div class="balance-edit-controls">
+                                <input type="number" id="balance-change" min="0" max="1000" step="0.1" placeholder="Enter ETH amount" autocomplete="on">
+                                <button id="update-balance-btn" class="mini-btn">Add</button>
+                            </div>
+                        </div>
+                        <div id="balance-update-notification" class="update-notification hidden">
+                            <span id="balance-change-message"></span>
+                        </div>
+                        <div id="credential-upgrade-note" class="upgrade-note hidden">
+                            <p>Note: Your validator has 0x01 credentials. To take advantage of higher effective balance (up to 2048 ETH), you need to upgrade to 0x02 credentials.</p>
+                            <p>Benefits of upgrading include: automatic reward compounding, reduced slashing penalties, and the ability to consolidate multiple validators.</p>
+                            <p>Upgrading requires signing a "ConsolidationRequest" with your withdrawal address. This process is one-way and irreversible.</p>
+                            <p><a href="https://ethereum.org/en/roadmap/pectra/maxeb/" target="_blank">Learn more on ethereum.org</a> or <a href="https://launchpad.ethereum.org/en/withdrawals" target="_blank">visit Ethereum Launchpad for upgrade instructions</a></p>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Effective Balance:</span>
@@ -114,8 +130,12 @@
                 <h3>Projected Rewards</h3>
                 <div id="single-result" class="result-group">
                     <div class="result-item">
-                        <span class="label">Final Balance</span>
+                        <span class="label">Total Balance</span>
                         <span id="final-balance" class="value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Effective Balance</span>
+                        <span id="effective-balance-result" class="value">-</span>
                     </div>
                     <div class="result-item">
                         <span class="label">Total Rewards</span>
@@ -134,10 +154,16 @@
                         <span class="header-cell">Difference</span>
                     </div>
                     <div class="comparison-row">
-                        <span class="label-cell">Final Balance</span>
+                        <span class="label-cell">Total Balance</span>
                         <span id="compare-0x01-final" class="value-cell">-</span>
                         <span id="compare-0x02-final" class="value-cell">-</span>
                         <span id="compare-final-diff" class="diff-cell">-</span>
+                    </div>
+                    <div class="comparison-row">
+                        <span class="label-cell">Effective Balance</span>
+                        <span id="compare-0x01-effective" class="value-cell">-</span>
+                        <span id="compare-0x02-effective" class="value-cell">-</span>
+                        <span id="compare-effective-diff" class="diff-cell">-</span>
                     </div>
                     <div class="comparison-row">
                         <span class="label-cell">Total Rewards</span>
@@ -169,6 +195,8 @@
                 <li>Partial withdrawals only trigger when balance exceeds 2048 ETH (vs 32 ETH before)</li>
                 <li>Large stakers can consolidate validators, reducing operational complexity</li>
                 <li>Effective balance increases in 0.25 ETH increments once balance exceeds previous effective balance by 0.25 ETH</li>
+                <li>Slashing penalties are reduced from 1 ETH to 0.0078125 ETH per 32 ETH</li>
+                <li>Converting to 0x02 credentials requires an active validator to sign a "ConsolidationRequest"</li>
             </ul>
             <p>This calculator helps you estimate your validator rewards with both credential types, and can fetch data from the Beacon Chain via beaconcha.in API.</p>
             
@@ -178,6 +206,7 @@
                 <li><a href="https://www.attestant.io/posts/exploring-validator-compounding/" target="_blank">Exploring Validator Compounding - Attestant.io</a></li>
                 <li><a href="https://eips.ethereum.org/EIPS/eip-7251" target="_blank">EIP-7251: Increase the MAX_EFFECTIVE_BALANCE</a></li>
                 <li><a href="https://ethereum.org/en/staking/" target="_blank">Ethereum Staking Documentation</a></li>
+                <li><a href="https://ethereum.org/en/roadmap/pectra/maxeb/" target="_blank">Pectra: Maximum Effective Balance - ethereum.org</a></li>
                 <li><a href="https://hackernoon.com/eip-7251-raising-maximum-effective-balance-for-validators" target="_blank">EIP-7251: Raising Maximum Effective Balance For Validators - Hackernoon</a></li>
                 <li><a href="https://consensys.io/blog/ethereum-pectra-upgrade" target="_blank">Understanding Ethereum's Pectra upgrade - Consensys</a></li>
             </ul>

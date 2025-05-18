@@ -238,6 +238,79 @@ input:focus, select:focus {
     color: #1a2f60;
 }
 
+/* Balance edit controls */
+.balance-edit-controls {
+    display: flex;
+    gap: 5px;
+    flex: 1;
+}
+
+.balance-edit-controls input {
+    flex: 1;
+}
+
+.mini-btn {
+    background-color: #1a2f60;
+    color: #fff;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.mini-btn:hover {
+    background-color: #111d3b;
+}
+
+.update-notification {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background-color: #e8f5e9;
+    border-left: 3px solid #28a745;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #28a745;
+    animation: fadeIn 0.3s, fadeOut 0.3s 3s forwards;
+}
+
+.upgrade-note {
+    margin: 12px 0;
+    padding: 12px;
+    background-color: #fff3e0;
+    border-left: 3px solid #ff9800;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.upgrade-note p {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.upgrade-note a {
+    color: #1a2f60;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.upgrade-note a:hover {
+    text-decoration: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
 /* Results styles */
 .results {
     flex: 1;
