@@ -105,12 +105,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Initialize with starting values
         let currentBalance = initialBalance;
-        // Effective balance is rounded down to the nearest EFFECTIVE_BALANCE_INCREMENT (0.25 ETH)
-        // and capped at maxEffectiveBalance
-        let currentEffectiveBalance = Math.min(
-            Math.floor(initialBalance / EFFECTIVE_BALANCE_INCREMENT) * EFFECTIVE_BALANCE_INCREMENT,
-            maxEffectiveBalance
-        );
+        // Initial effective balance: multi-validator for 0x01, integer floor for 0x02
+        let currentEffectiveBalance;
+        if (credentialType === '0x01') {
+            const validatorCount = Math.floor(initialBalance / MAX_EFFECTIVE_BALANCE_0X01);
+            currentEffectiveBalance = validatorCount * MAX_EFFECTIVE_BALANCE_0X01;
+        } else {
+            currentEffectiveBalance = Math.min(
+                Math.floor(initialBalance),
+                maxEffectiveBalance
+            );
+        }
+        
+        // No withdrawal simulation: rewards accrue but effective balance per validator stays constant
+        // Start with current date
+        const startDate = new Date();
+        // Create date labels - start with today's date
+        const dateLabels = [];
+        dateLabels.push(formatDate(startDate));
         
         timeLabels.push(0);
         balanceData.push(currentBalance);
@@ -124,23 +136,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add rewards to balance
             currentBalance += intervalReward;
             
-            // Update effective balance with bounds
-            if (credentialType === '0x01') {
-                // For 0x01, effective balance is capped at 32 ETH
-                // Any excess is automatically withdrawn and doesn't compound
-                currentEffectiveBalance = Math.min(MAX_EFFECTIVE_BALANCE_0X01, currentBalance);
-            } else {
-                // For 0x02, effective balance can grow up to 2048 ETH
-                // Note: Effective balance only increases when total balance exceeds 
-                // current effective balance by at least EFFECTIVE_BALANCE_INCREMENT (0.25 ETH)
-                if (currentBalance >= currentEffectiveBalance + EFFECTIVE_BALANCE_INCREMENT && 
-                    currentEffectiveBalance < maxEffectiveBalance) {
-                    // Calculate new effective balance
-                    const newEffectiveBalance = Math.min(
-                        Math.floor(currentBalance / EFFECTIVE_BALANCE_INCREMENT) * EFFECTIVE_BALANCE_INCREMENT,
-                        maxEffectiveBalance
-                    );
-                    currentEffectiveBalance = newEffectiveBalance;
+            // Update effective balance with bounds (only for 0x02)
+            if (credentialType === '0x02') {
+                while (
+                    currentEffectiveBalance < maxEffectiveBalance &&
+                    currentBalance >= currentEffectiveBalance + 1 + EFFECTIVE_BALANCE_INCREMENT
+                ) {
+                    currentEffectiveBalance += 1;
                 }
             }
             
@@ -219,18 +221,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const effectiveBalanceData = [];
         
         // Initialize with starting values
-        const actualInitialBalance = initialBalance;
+        const actualInitialBalance = credentialType === '0x02'
+            ? Math.min(initialBalance, MAX_EFFECTIVE_BALANCE_0X02)
+            : initialBalance;
         // Capped initial balance for calculations
         let currentBalance = actualInitialBalance;
         
-        // Initial effective balance - cap to max effective balance for this credential type
-        let currentEffectiveBalance = Math.min(
-            Math.floor(currentBalance / EFFECTIVE_BALANCE_INCREMENT) * EFFECTIVE_BALANCE_INCREMENT,
-            maxEffectiveBalance
-        );
-        
-        // Track withdrawals for 0x01 credentials (rewards over 32 ETH that would be auto-withdrawn)
-        let totalWithdrawals = 0;
+        // Initial effective balance: multi-validator for 0x01, integer floor for 0x02
+        let currentEffectiveBalance;
+        if (credentialType === '0x01') {
+            const validatorCount = Math.floor(actualInitialBalance / MAX_EFFECTIVE_BALANCE_0X01);
+            currentEffectiveBalance = validatorCount * MAX_EFFECTIVE_BALANCE_0X01;
+        } else {
+            currentEffectiveBalance = Math.min(
+                Math.floor(currentBalance),
+                maxEffectiveBalance
+            );
+        }
+        // No withdrawal simulation: rewards accrue but effective balance per validator stays constant
         
         // Start with current date
         const startDate = new Date();
@@ -250,30 +258,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add rewards to balance
             currentBalance += intervalReward;
             
-            // Update effective balance with bounds
-            if (credentialType === '0x01') {
-                // For 0x01, effective balance is capped at 32 ETH
-                currentEffectiveBalance = Math.min(MAX_EFFECTIVE_BALANCE_0X01, currentBalance);
-                
-                // For 0x01 credentials, simulate automatic withdrawals
-                // Any balance above 32 ETH gets withdrawn automatically
-                if (currentBalance > MAX_EFFECTIVE_BALANCE_0X01) {
-                    const withdrawal = currentBalance - MAX_EFFECTIVE_BALANCE_0X01;
-                    totalWithdrawals += withdrawal;
-                    currentBalance = MAX_EFFECTIVE_BALANCE_0X01;
-                }
-            } else {
-                // For 0x02, effective balance can grow up to 2048 ETH
-                // Note: Effective balance only increases when total balance exceeds 
-                // current effective balance by at least EFFECTIVE_BALANCE_INCREMENT (0.25 ETH)
-                if (currentBalance >= currentEffectiveBalance + EFFECTIVE_BALANCE_INCREMENT && 
-                    currentEffectiveBalance < maxEffectiveBalance) {
-                    // Calculate new effective balance
-                    const newEffectiveBalance = Math.min(
-                        Math.floor(currentBalance / EFFECTIVE_BALANCE_INCREMENT) * EFFECTIVE_BALANCE_INCREMENT,
-                        maxEffectiveBalance
-                    );
-                    currentEffectiveBalance = newEffectiveBalance;
+            // Only update effective balance for 0x02
+            if (credentialType === '0x02') {
+                while (
+                    currentEffectiveBalance < maxEffectiveBalance &&
+                    currentBalance >= currentEffectiveBalance + 1 + EFFECTIVE_BALANCE_INCREMENT
+                ) {
+                    currentEffectiveBalance += 1;
                 }
             }
             
@@ -291,13 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     timeLabels.push(yearFraction.toFixed(2));
                     
-                    // Store the actual balance for the chart - for 0x01, include withdrawals
-                    if (credentialType === '0x01') {
-                        balanceData.push(currentBalance + totalWithdrawals);
-                    } else {
-                        balanceData.push(currentBalance);
-                    }
-                    
+                    // Store the actual balance for the chart
+                    balanceData.push(currentBalance);
                     effectiveBalanceData.push(currentEffectiveBalance);
                 }
             } else {
@@ -316,40 +302,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 timeLabels.push(yearFraction.toFixed(2));
                 
-                // Store the actual balance for the chart - for 0x01, include withdrawals
-                if (credentialType === '0x01') {
-                    balanceData.push(currentBalance + totalWithdrawals);
-                } else {
-                    balanceData.push(currentBalance);
-                }
-                
+                // Store the actual balance for the chart
+                balanceData.push(currentBalance);
                 effectiveBalanceData.push(currentEffectiveBalance);
             }
         }
         
         // Calculate final results
-        // For 0x01 credentials, we need to add back the withdrawals to get the true total balance
-        const finalBalance = credentialType === '0x01' ? 
-            currentBalance + totalWithdrawals : currentBalance;
-        
-        // Total rewards is the difference between final balance and initial balance
+        const finalBalance = currentBalance;
         const totalRewards = finalBalance - actualInitialBalance;
-        
-        // ROI calculation
         const roi = (totalRewards / actualInitialBalance) * 100;
         
         return {
             timeLabels,
             dateLabels,
-            // Balance data already includes withdrawals for 0x01
             balanceData,
             effectiveBalanceData,
             finalBalance,
             totalRewards,
-            roi,
-            totalWithdrawals,
-            // Store the real final validator balance (without withdrawals for 0x01)
-            validatorBalance: currentBalance
+            roi
         };
     }
     
