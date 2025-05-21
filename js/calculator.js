@@ -38,14 +38,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Default annual reward rate based on research
     // Source: https://www.attestant.io/posts/exploring-validator-compounding/
     // and https://ethereum.org/en/staking/
-    const DEFAULT_ANNUAL_REWARD_RATE = 4.2; // 4.2% APR
+    const DEFAULT_ANNUAL_REWARD_RATE = 3.0; // 3.0% APR
 
     // DOM elements
     const initialBalanceInput = document.getElementById('initial-balance');
     const credentialTypeSelect = document.getElementById('credential-type');
     const rewardRateInput = document.getElementById('reward-rate');
     const timePeriodInput = document.getElementById('time-period');
-    const compoundFrequencySelect = document.getElementById('compound-frequency');
     const comparisonModeCheckbox = document.getElementById('comparison-mode');
     const calculateBtn = document.getElementById('calculate-btn');
     
@@ -56,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Set default values from research
     rewardRateInput.value = DEFAULT_ANNUAL_REWARD_RATE;
-    compoundFrequencySelect.value = 'epoch'; // Set default to per-epoch compounding
     
     // Chart instance
     let rewardsChart = null;
@@ -69,34 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const credentialType = credentialTypeSelect.value;
         const annualRewardRate = parseFloat(rewardRateInput.value) / 100;
         const timePeriod = parseInt(timePeriodInput.value);
-        const compoundFrequency = compoundFrequencySelect.value;
         
         // Determine max effective balance based on credential type
         const maxEffectiveBalance = credentialType === '0x01' ? 
             MAX_EFFECTIVE_BALANCE_0X01 : MAX_EFFECTIVE_BALANCE_0X02;
         
-        // Determine compound intervals per year
-        let intervalsPerYear;
-        switch(compoundFrequency) {
-            case 'epoch':
-                intervalsPerYear = EPOCHS_PER_YEAR;
-                break;
-            case 'daily':
-                intervalsPerYear = 365;
-                break;
-            case 'monthly':
-                intervalsPerYear = 12;
-                break;
-            case 'yearly':
-                intervalsPerYear = 1;
-                break;
-            default:
-                intervalsPerYear = 365;
-        }
-        
-        // Calculate the rate per interval
-        const ratePerInterval = annualRewardRate / intervalsPerYear;
-        const totalIntervals = intervalsPerYear * timePeriod;
+        // Calculate the rate per epoch
+        const ratePerEpoch = annualRewardRate / EPOCHS_PER_YEAR;
+        const totalEpochs = EPOCHS_PER_YEAR * timePeriod;
         
         // Arrays to track balance over time
         const timeLabels = [];
@@ -104,20 +82,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const effectiveBalanceData = [];
         
         // Initialize with starting values
-        let currentBalance = initialBalance;
+        const actualInitialBalance = credentialType === '0x02'
+            ? Math.min(initialBalance, MAX_EFFECTIVE_BALANCE_0X02)
+            : initialBalance;
+        let currentBalance = actualInitialBalance;
+        
         // Initial effective balance: multi-validator for 0x01, integer floor for 0x02
         let currentEffectiveBalance;
         if (credentialType === '0x01') {
-            const validatorCount = Math.floor(initialBalance / MAX_EFFECTIVE_BALANCE_0X01);
+            const validatorCount = Math.floor(actualInitialBalance / MAX_EFFECTIVE_BALANCE_0X01);
             currentEffectiveBalance = validatorCount * MAX_EFFECTIVE_BALANCE_0X01;
         } else {
             currentEffectiveBalance = Math.min(
-                Math.floor(initialBalance),
+                Math.floor(currentBalance),
                 maxEffectiveBalance
             );
         }
         
-        // No withdrawal simulation: rewards accrue but effective balance per validator stays constant
         // Start with current date
         const startDate = new Date();
         // Create date labels - start with today's date
@@ -129,14 +110,14 @@ document.addEventListener('DOMContentLoaded', () => {
         effectiveBalanceData.push(currentEffectiveBalance);
         
         // Calculate compound interest over time
-        for (let interval = 1; interval <= totalIntervals; interval++) {
-            // Calculate rewards for this interval based on effective balance
-            const intervalReward = currentEffectiveBalance * ratePerInterval;
+        for (let epoch = 1; epoch <= totalEpochs; epoch++) {
+            // Calculate rewards for this epoch based on effective balance
+            const epochReward = currentEffectiveBalance * ratePerEpoch;
             
             // Add rewards to balance
-            currentBalance += intervalReward;
+            currentBalance += epochReward;
             
-            // Update effective balance with bounds (only for 0x02)
+            // Only update effective balance for 0x02
             if (credentialType === '0x02') {
                 while (
                     currentEffectiveBalance < maxEffectiveBalance &&
@@ -146,20 +127,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Record data points for chart (not every interval to keep chart readable)
-            // For epoch compounding, record daily points
-            const yearFraction = interval / intervalsPerYear;
-            
-            if (compoundFrequency === 'epoch') {
-                // Record approximately daily for epoch compounding
-                if (interval % Math.floor(EPOCHS_PER_YEAR / 365) === 0 || interval === totalIntervals) {
-                    timeLabels.push(yearFraction.toFixed(2));
-                    balanceData.push(currentBalance);
-                    effectiveBalanceData.push(currentEffectiveBalance);
-                }
-            } else {
-                // Record every interval for other compounding frequencies
+            // Record approximately daily data points for chart
+            if (epoch % Math.floor(EPOCHS_PER_YEAR / 365) === 0 || epoch === totalEpochs) {
+                // Calculate date for this data point
+                const daysFromStart = Math.floor((epoch / EPOCHS_PER_YEAR) * 365);
+                const pointDate = addDays(startDate, daysFromStart);
+                dateLabels.push(formatDate(pointDate));
+                
+                const yearFraction = epoch / EPOCHS_PER_YEAR;
                 timeLabels.push(yearFraction.toFixed(2));
+                
+                // Store the actual balance for the chart
                 balanceData.push(currentBalance);
                 effectiveBalanceData.push(currentEffectiveBalance);
             }
@@ -167,8 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Calculate final results
         const finalBalance = currentBalance;
-        const totalRewards = finalBalance - initialBalance;
-        const roi = (totalRewards / initialBalance) * 100;
+        const totalRewards = finalBalance - actualInitialBalance;
+        const roi = (totalRewards / actualInitialBalance) * 100;
         
         // Update UI
         finalBalanceEl.textContent = `${finalBalance.toFixed(4)} ETH`;
@@ -185,35 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialBalance = parseFloat(initialBalanceInput.value);
         const annualRewardRate = parseFloat(rewardRateInput.value) / 100;
         const timePeriod = parseInt(timePeriodInput.value);
-        const compoundFrequency = compoundFrequencySelect.value;
         
         // Determine max effective balance based on credential type
-        // For 0x01, limit to 32 ETH, for 0x02 allow up to 2048 ETH
         const maxEffectiveBalance = credentialType === '0x01' ? 
             MAX_EFFECTIVE_BALANCE_0X01 : MAX_EFFECTIVE_BALANCE_0X02;
         
-        // Determine compound intervals per year
-        let intervalsPerYear;
-        switch(compoundFrequency) {
-            case 'epoch':
-                intervalsPerYear = EPOCHS_PER_YEAR;
-                break;
-            case 'daily':
-                intervalsPerYear = 365;
-                break;
-            case 'monthly':
-                intervalsPerYear = 12;
-                break;
-            case 'yearly':
-                intervalsPerYear = 1;
-                break;
-            default:
-                intervalsPerYear = 365;
-        }
-        
-        // Calculate the rate per interval
-        const ratePerInterval = annualRewardRate / intervalsPerYear;
-        const totalIntervals = intervalsPerYear * timePeriod;
+        // Calculate the rate per epoch
+        const ratePerEpoch = annualRewardRate / EPOCHS_PER_YEAR;
+        const totalEpochs = EPOCHS_PER_YEAR * timePeriod;
         
         // Arrays to track balance over time
         const timeLabels = [];
@@ -224,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const actualInitialBalance = credentialType === '0x02'
             ? Math.min(initialBalance, MAX_EFFECTIVE_BALANCE_0X02)
             : initialBalance;
-        // Capped initial balance for calculations
         let currentBalance = actualInitialBalance;
         
         // Initial effective balance: multi-validator for 0x01, integer floor for 0x02
@@ -238,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxEffectiveBalance
             );
         }
-        // No withdrawal simulation: rewards accrue but effective balance per validator stays constant
         
         // Start with current date
         const startDate = new Date();
@@ -251,12 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
         effectiveBalanceData.push(currentEffectiveBalance);
         
         // Calculate compound interest over time
-        for (let interval = 1; interval <= totalIntervals; interval++) {
-            // Calculate rewards for this interval based on effective balance
-            const intervalReward = currentEffectiveBalance * ratePerInterval;
+        for (let epoch = 1; epoch <= totalEpochs; epoch++) {
+            // Calculate rewards for this epoch based on effective balance
+            const epochReward = currentEffectiveBalance * ratePerEpoch;
             
             // Add rewards to balance
-            currentBalance += intervalReward;
+            currentBalance += epochReward;
             
             // Only update effective balance for 0x02
             if (credentialType === '0x02') {
@@ -268,38 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Record data points for chart (not every interval to keep chart readable)
-            // For epoch compounding, record daily points
-            const yearFraction = interval / intervalsPerYear;
-            
-            if (compoundFrequency === 'epoch') {
-                // Record approximately daily for epoch compounding
-                if (interval % Math.floor(EPOCHS_PER_YEAR / 365) === 0 || interval === totalIntervals) {
-                    // Calculate date for this data point
-                    const daysFromStart = Math.floor((interval / intervalsPerYear) * 365);
-                    const pointDate = addDays(startDate, daysFromStart);
-                    dateLabels.push(formatDate(pointDate));
-                    
-                    timeLabels.push(yearFraction.toFixed(2));
-                    
-                    // Store the actual balance for the chart
-                    balanceData.push(currentBalance);
-                    effectiveBalanceData.push(currentEffectiveBalance);
-                }
-            } else {
-                // Record every interval for other compounding frequencies
-                // Calculate date for this interval based on frequency
-                let pointDate;
-                if (compoundFrequency === 'daily') {
-                    pointDate = addDays(startDate, interval);
-                } else if (compoundFrequency === 'monthly') {
-                    pointDate = new Date(startDate);
-                    pointDate.setMonth(pointDate.getMonth() + interval);
-                } else { // yearly
-                    pointDate = addYears(startDate, interval);
-                }
+            // Record approximately daily data points for chart
+            if (epoch % Math.floor(EPOCHS_PER_YEAR / 365) === 0 || epoch === totalEpochs) {
+                // Calculate date for this data point
+                const daysFromStart = Math.floor((epoch / EPOCHS_PER_YEAR) * 365);
+                const pointDate = addDays(startDate, daysFromStart);
                 dateLabels.push(formatDate(pointDate));
                 
+                const yearFraction = epoch / EPOCHS_PER_YEAR;
                 timeLabels.push(yearFraction.toFixed(2));
                 
                 // Store the actual balance for the chart
